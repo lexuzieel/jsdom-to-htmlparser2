@@ -1087,21 +1087,20 @@ export { parseHTML, NodeAdapter };</code></pre>
   <!-- ── 13. XML Mode ── -->
   <section id="xml-mode">
     <h2><span class="badge">13</span> XML Mode</h2>
-    <p>htmlparser2 ships a built-in XML mode that changes how the parser interprets the document. jsdom always parses HTML with the HTML5 algorithm; there is no direct equivalent, but <code>DOMParser</code> with <code>text/xml</code> or <code>application/xhtml+xml</code> is the closest browser analogue.</p>
+    <p>htmlparser2 ships a built-in XML mode that changes how the parser interprets the document. jsdom supports the same via the <code>contentType</code> constructor option — both give you case-sensitive tag names, self-closing tags, and no implicit HTML structure injection.</p>
 
     <div class="compare">
       <div class="cb">
-        <div class="cb-head"><span class="cb-label lj">jsdom — parse as XML/XHTML</span><button class="copy-btn">copy</button></div>
+        <div class="cb-head"><span class="cb-label lj">jsdom — parse as XML</span><button class="copy-btn">copy</button></div>
         <pre><code class="language-js">import { JSDOM } from 'jsdom';
 
-// jsdom has no first-class XML mode.
-// Closest: use the DOMParser API it exposes:
-const { DOMParser } = new JSDOM('').window;
-const doc = new DOMParser()
-  .parseFromString(xmlString, 'application/xml');
+const dom = new JSDOM(xmlString, {
+  contentType: 'application/xml',
+});
+const document = dom.window.document;
 
 // Tag names are case-sensitive and preserved as-is.
-// Malformed XML throws a parseerror document.</code></pre>
+// Malformed XML produces a parseerror document.</code></pre>
       </div>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">htmlparser2 — xmlMode</span><button class="copy-btn">copy</button></div>
