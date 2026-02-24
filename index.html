@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>jsdom → htmlparser2: Migration Guide</title>
+  <meta name="description" content="Step-by-step guide to replacing jsdom with htmlparser2, domutils, and css-select in Node.js. Covers querying, attributes, text, navigation, mutation, serialization, XML mode, and more.">
+  <title>Migrating from jsdom to htmlparser2 — Practical Guide</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
@@ -316,34 +317,36 @@
 
 <!-- ══════════════════ SIDEBAR ══════════════════ -->
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-title">jsdom → htmlparser2</div>
+  <div class="sidebar-title">jsdom → htmlparser2 guide</div>
   <nav id="toc">
-    <a href="#mental-model">Mental Model</a>
-    <a href="#parsing">Parsing</a>
-    <a href="#querying">Querying</a>
-    <a href="#attributes">Attributes</a>
-    <a href="#text">Text Content</a>
-    <a href="#navigation">Navigation</a>
-    <a href="#type-checking">Type Checking</a>
-    <a href="#serialization">Serialization</a>
-    <a href="#classes">Classes</a>
-    <a href="#mutation">Mutation</a>
-    <a href="#adapter">Adapter Pattern</a>
-    <a href="#playground">Live Playground</a>
-    <a href="#xml-mode">XML Mode</a>
-    <a href="#cheatsheet">Cheat Sheet</a>
+    <a href="#mental-model">§1 Mental Model</a>
+    <a href="#parsing">§2 Parsing</a>
+    <a href="#querying">§3 Querying</a>
+    <a href="#attributes">§4 Attributes</a>
+    <a href="#text">§5 Text Content</a>
+    <a href="#navigation">§6 Navigation</a>
+    <a href="#type-checking">§7 Type Checking</a>
+    <a href="#serialization">§8 Serialization</a>
+    <a href="#classes">§9 Classes</a>
+    <a href="#mutation">§10 Mutation</a>
+    <a href="#adapter">§11 Adapter Pattern</a>
+    <a href="#playground">§12 Live Playground</a>
+    <a href="#xml-mode">§13 XML Mode</a>
+    <a href="#cheatsheet">§14 Cheat Sheet</a>
   </nav>
 </aside>
 
 <!-- ══════════════════ MAIN ══════════════════ -->
 <main class="main">
 
-  <h1>jsdom → htmlparser2</h1>
-  <p class="subtitle">A practical guide to the htmlparser2 + domutils + css-select ecosystem — for developers who know jsdom.</p>
+  <h1>Migrating from jsdom to htmlparser2</h1>
+  <p class="subtitle">A practical reference for the htmlparser2 + domutils + css-select ecosystem — written for developers who already know jsdom.</p>
+  <p>If you're using jsdom purely for server-side HTML parsing — scraping, templating, data extraction — it carries unnecessary overhead: a full browser environment, V8 bindings, and a substantial install footprint. htmlparser2 is a lean, fast alternative that covers the same ground at a fraction of the cost.</p>
+  <p>This guide translates every jsdom pattern you already know into its htmlparser2 equivalent, section by section. The core stack is three packages: <code>htmlparser2</code> for parsing, <code>domutils</code> for traversal and text extraction, and <code>css-select</code> for CSS selector queries.</p>
 
   <!-- ── 1. Mental Model ── -->
   <section id="mental-model">
-    <h2><span class="badge">1</span> The Mental Model Shift</h2>
+    <h2><span class="badge">§1</span> The Mental Model Shift</h2>
     <p>jsdom simulates a browser: it gives you a live <code>document</code> object with methods (<code>querySelector</code>, <code>getElementById</code>…) that behave exactly like in a browser. The DOM tree is made of class instances.</p>
     <p>htmlparser2 is different. It gives you a <strong>plain JavaScript object tree</strong>. There is no <code>window</code>, no <code>document.querySelector</code>, no <code>classList</code>. Querying and traversal are done by <em>separate utility libraries</em>.</p>
 
@@ -386,7 +389,7 @@
 
   <!-- ── 2. Parsing ── -->
   <section id="parsing">
-    <h2><span class="badge">2</span> Parsing HTML</h2>
+    <h2><span class="badge">§2</span> Parsing HTML</h2>
 
     <div class="compare">
       <div class="cb">
@@ -425,7 +428,7 @@ const document = parseDocument(html);
 
   <!-- ── 3. Querying ── -->
   <section id="querying">
-    <h2><span class="badge">3</span> Querying the DOM</h2>
+    <h2><span class="badge">§3</span> Querying the DOM</h2>
     <p>css-select is the query engine. CSS selectors work identically to what you know from the browser.</p>
 
     <div class="compare">
@@ -532,7 +535,7 @@ is(node, 'a[href]')</code></pre>
 
   <!-- ── 4. Attributes ── -->
   <section id="attributes">
-    <h2><span class="badge">4</span> Attributes</h2>
+    <h2><span class="badge">§4</span> Attributes</h2>
     <p>In htmlparser2, attributes are stored as a plain object on <code>node.attribs</code>. You can access them directly — no method calls required.</p>
 
     <div class="compare">
@@ -593,7 +596,7 @@ Object.entries(el.attribs).forEach(([name, value]) => {
 
   <!-- ── 5. Text Content ── -->
   <section id="text">
-    <h2><span class="badge">5</span> Text Content</h2>
+    <h2><span class="badge">§5</span> Text Content</h2>
 
     <div class="compare">
       <div class="cb">
@@ -650,7 +653,7 @@ el.children
 
   <!-- ── 6. Navigation ── -->
   <section id="navigation">
-    <h2><span class="badge">6</span> Tree Navigation</h2>
+    <h2><span class="badge">§6</span> Tree Navigation</h2>
 
     <div class="compare">
       <div class="cb">
@@ -734,7 +737,7 @@ function prevElementSibling(node) {
 
   <!-- ── 7. Type Checking ── -->
   <section id="type-checking">
-    <h2><span class="badge">7</span> Type Checking</h2>
+    <h2><span class="badge">§7</span> Type Checking</h2>
     <p>jsdom uses numeric <code>nodeType</code> constants. htmlparser2 uses a <code>type</code> string on each node.</p>
 
     <div class="compare">
@@ -785,7 +788,7 @@ node.type === 'root'</code></pre>
 
   <!-- ── 8. Serialization ── -->
   <section id="serialization">
-    <h2><span class="badge">8</span> Serialization (innerHTML / outerHTML)</h2>
+    <h2><span class="badge">§8</span> Serialization (innerHTML / outerHTML)</h2>
 
     <div class="compare">
       <div class="cb">
@@ -813,7 +816,7 @@ render(node)                   // outer HTML</code></pre>
 
   <!-- ── 9. Classes ── -->
   <section id="classes">
-    <h2><span class="badge">9</span> Class Manipulation</h2>
+    <h2><span class="badge">§9</span> Class Manipulation</h2>
     <p>There is no <code>classList</code> in htmlparser2. Classes are just a space-separated string in <code>node.attribs.class</code>.</p>
 
     <div class="compare">
@@ -860,7 +863,7 @@ el.attribs.class = classes().map(c => c === 'old' ? 'new' : c).join(' ');</code>
 
   <!-- ── 10. Mutation ── -->
   <section id="mutation">
-    <h2><span class="badge">10</span> DOM Mutation</h2>
+    <h2><span class="badge">§10</span> DOM Mutation</h2>
     <p>You can mutate the tree by editing the plain objects directly, or use domutils helpers for structural changes.</p>
 
     <div class="compare">
@@ -931,7 +934,7 @@ if (last) {
 
   <!-- ── 11. Adapter Pattern ── -->
   <section id="adapter">
-    <h2><span class="badge">11</span> The Adapter Pattern</h2>
+    <h2><span class="badge">§11</span> The Adapter Pattern</h2>
     <p>You're considering wrapping htmlparser2 in a jsdom-compatible interface so your business logic doesn't change. Here's a realistic view of what that looks like.</p>
 
     <div class="cb">
@@ -1040,7 +1043,7 @@ export { parseHTML, NodeAdapter };</code></pre>
 
   <!-- ── 12. Live Playground ── -->
   <section id="playground">
-    <h2><span class="badge">12</span> Live Playground</h2>
+    <h2><span class="badge">§12</span> Live Playground</h2>
     <p>Parse HTML and query it with css-select — running real htmlparser2 + domutils + css-select in the browser.</p>
 
     <div class="pg">
@@ -1086,7 +1089,7 @@ export { parseHTML, NodeAdapter };</code></pre>
 
   <!-- ── 13. XML Mode ── -->
   <section id="xml-mode">
-    <h2><span class="badge">13</span> XML Mode</h2>
+    <h2><span class="badge">§13</span> XML Mode</h2>
     <p>htmlparser2 ships a built-in XML mode that changes how the parser interprets the document. jsdom supports the same via the <code>contentType</code> constructor option — both give you case-sensitive tag names, self-closing tags, and no implicit HTML structure injection.</p>
 
     <div class="compare">
@@ -1165,7 +1168,7 @@ const fiction = selectAll('Book[genre="fiction"]', doc);</code></pre>
 
   <!-- ── 14. Cheat Sheet ── -->
   <section id="cheatsheet">
-    <h2><span class="badge">14</span> Cheat Sheet</h2>
+    <h2><span class="badge">§14</span> Cheat Sheet</h2>
     <div class="table-wrap">
       <table>
         <tr><th style="width:40%">jsdom</th><th>htmlparser2 equivalent</th></tr>
