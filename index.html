@@ -122,7 +122,6 @@
       font-size: .83em;
       background: #eef0f3;
       padding: .1em .35em;
-      border-radius: 4px;
       color: #c73200;
     }
 
@@ -331,6 +330,7 @@
     <a href="#mutation">Mutation</a>
     <a href="#adapter">Adapter Pattern</a>
     <a href="#playground">Live Playground</a>
+    <a href="#xml-mode">XML Mode</a>
     <a href="#cheatsheet">Cheat Sheet</a>
   </nav>
 </aside>
@@ -391,7 +391,7 @@
     <div class="compare">
       <div class="cb">
         <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
-        <pre><code class="language-js">const { JSDOM } = require('jsdom');
+        <pre><code class="language-js">import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM(html);
 const document = dom.window.document;
@@ -400,7 +400,7 @@ const document = dom.window.document;
       </div>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
-        <pre><code class="language-js">const { parseDocument } = require('htmlparser2');
+        <pre><code class="language-js">import { parseDocument } from 'htmlparser2';
 
 const document = parseDocument(html);
 
@@ -412,8 +412,7 @@ const document = parseDocument(html);
     <div class="callout note">
       <strong>📦 Install</strong>
       <code>npm install htmlparser2 domutils css-select domhandler</code><br><br>
-      All examples use CommonJS <code>require()</code>. For ESM, swap to named imports:
-      <code>import { parseDocument } from 'htmlparser2'</code>, <code>import * as domutils from 'domutils'</code>, etc.
+      All examples use ESM <code>import</code> syntax. For CommonJS, swap to <code>require()</code> — e.g. <code>const { parseDocument } = require('htmlparser2')</code>, <code>const domutils = require('domutils')</code>.
     </div>
 
     <div class="callout tip">
@@ -448,7 +447,7 @@ document.getElementsByTagName('p')</code></pre>
       </div>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">htmlparser2 + css-select</span><button class="copy-btn">copy</button></div>
-        <pre><code class="language-js">const { selectOne, selectAll } = require('css-select');
+        <pre><code class="language-js">import { selectOne, selectAll } from 'css-select';
 
 // Single element (or null)
 selectOne('.nav-link', document)
@@ -471,7 +470,7 @@ selectAll('p', document)</code></pre>
 
     <div class="cb">
       <div class="cb-head"><span class="cb-label lb">domutils — predicate queries</span><button class="copy-btn">copy</button></div>
-      <pre><code class="language-js">const domutils = require('domutils');
+      <pre><code class="language-js">import * as domutils from 'domutils';
 
 // Find first tag whose text starts with "Price:"
 const node = domutils.findOne(
@@ -498,7 +497,7 @@ rows.forEach(row => {
       </div>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">css-select</span><button class="copy-btn">copy</button></div>
-        <pre><code class="language-js">const { compile, selectOne } = require('css-select');
+        <pre><code class="language-js">import { compile, selectOne } from 'css-select';
 
 // Compile once, reuse many times (faster in loops)
 const priceCell = compile('td.price');
@@ -518,7 +517,7 @@ element.matches('a[href]')</code></pre>
       </div>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">css-select</span><button class="copy-btn">copy</button></div>
-        <pre><code class="language-js">const { is } = require('css-select');
+        <pre><code class="language-js">import { is } from 'css-select';
 
 is(node, '.active')
 is(node, 'a[href]')</code></pre>
@@ -800,7 +799,7 @@ el.outerHTML    // element itself + its content</code></pre>
 domutils.getOuterHTML(node)    // node + content
 
 // Alternative: dom-serializer (more control)
-const render = require('dom-serializer').default;
+import render from 'dom-serializer';
 render(node.children)          // inner HTML
 render(node)                   // outer HTML</code></pre>
       </div>
@@ -834,7 +833,7 @@ el.classList.replace('old', 'new')</code></pre>
 // contains
 classes().includes('active')
 // or with css-select (no mutation):
-cssSelect.is(el, '.active')
+is(el, '.active')   // import { is } from 'css-select'
 
 // add
 if (!classes().includes('active'))
@@ -894,7 +893,7 @@ domutils.prepend(refNode, newNode)   // insert newNode before refNode
 domutils.append(refNode, newNode)    // insert newNode after refNode
 
 // Create nodes — use domhandler constructors:
-const { Element, Text } = require('domhandler');
+import { Element, Text } from 'domhandler';
 const div = new Element('div', { class: 'box' }, []);
 const txt = new Text('hello');</code></pre>
       </div>
@@ -914,7 +913,7 @@ const txt = new Text('hello');</code></pre>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
         <pre><code class="language-js">// Preferred: pass children at construction time
-const { Element } = require('domhandler');
+import { Element } from 'domhandler';
 const ul = new Element('ul', {}, [li1, li2, li3]);
 
 // Append after the fact — domutils.append() adds a sibling,
@@ -938,9 +937,9 @@ if (last) {
     <div class="cb">
       <div class="cb-head"><span class="cb-label lb">Minimal adapter skeleton</span><button class="copy-btn">copy</button></div>
       <pre><code class="language-js">// adapter.js
-const { parseDocument } = require('htmlparser2');
-const domutils = require('domutils');
-const { selectOne, selectAll, is } = require('css-select');
+import { parseDocument } from 'htmlparser2';
+import * as domutils from 'domutils';
+import { selectOne, selectAll, is } from 'css-select';
 
 class NodeAdapter {
   constructor(node) { this._n = node; }
@@ -1016,7 +1015,7 @@ function parseHTML(html) {
   return new NodeAdapter(doc);
 }
 
-module.exports = { parseHTML, NodeAdapter };</code></pre>
+export { parseHTML, NodeAdapter };</code></pre>
     </div>
 
     <h3>When the adapter is the right choice</h3>
@@ -1085,9 +1084,89 @@ module.exports = { parseHTML, NodeAdapter };</code></pre>
     </div>
   </section>
 
-  <!-- ── 13. Cheat Sheet ── -->
+  <!-- ── 13. XML Mode ── -->
+  <section id="xml-mode">
+    <h2><span class="badge">13</span> XML Mode</h2>
+    <p>htmlparser2 ships a built-in XML mode that changes how the parser interprets the document. jsdom always parses HTML with the HTML5 algorithm; there is no direct equivalent, but <code>DOMParser</code> with <code>text/xml</code> or <code>application/xhtml+xml</code> is the closest browser analogue.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom — parse as XML/XHTML</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">import { JSDOM } from 'jsdom';
+
+// jsdom has no first-class XML mode.
+// Closest: use the DOMParser API it exposes:
+const { DOMParser } = new JSDOM('').window;
+const doc = new DOMParser()
+  .parseFromString(xmlString, 'application/xml');
+
+// Tag names are case-sensitive and preserved as-is.
+// Malformed XML throws a parseerror document.</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2 — xmlMode</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">import { parseDocument } from 'htmlparser2';
+
+const doc = parseDocument(xmlString, { xmlMode: true });
+
+// xmlMode changes three things:
+//   1. Tag names are preserved as-is (no lowercasing)
+//   2. Self-closing tags (&lt;br/&gt;, &lt;MyTag/&gt;) are honoured
+//   3. No implicit HTML structure (no &lt;html&gt;/&lt;body&gt; injection)</code></pre>
+      </div>
+    </div>
+
+    <h3>Key behavioural differences</h3>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Behaviour</th><th>HTML mode (default)</th><th>xmlMode: true</th></tr>
+        <tr><td>Tag name casing</td><td>lowercased — <code>el.name === 'div'</code></td><td>preserved — <code>el.name === 'MyTag'</code></td></tr>
+        <tr><td>Self-closing tags</td><td>only void elements (<code>&lt;br&gt;</code>, <code>&lt;img&gt;</code>…)</td><td>any tag — <code>&lt;Foo/&gt;</code> has no children</td></tr>
+        <tr><td>Implicit structure</td><td><code>&lt;html&gt;</code>/<code>&lt;head&gt;</code>/<code>&lt;body&gt;</code> injected if missing</td><td>no injection — document mirrors input exactly</td></tr>
+        <tr><td>Error recovery</td><td>lenient HTML5 error recovery</td><td>best-effort; parser does not throw on malformed XML</td></tr>
+        <tr><td>CDATA sections</td><td>treated as comments</td><td>parsed as CDATA nodes (<code>type: 'cdata'</code>)</td></tr>
+        <tr><td>Namespaces</td><td>ignored</td><td>preserved in <code>el.name</code> (e.g. <code>'svg:path'</code>)</td></tr>
+      </table>
+    </div>
+
+    <h3>Querying XML documents</h3>
+    <p>css-select and domutils work identically in XML mode — pass the same parsed root to <code>selectOne</code> / <code>selectAll</code>. The only difference is that selectors are now <strong>case-sensitive</strong> by default, matching how browsers treat XML.</p>
+
+    <div class="cb">
+      <div class="cb-head"><span class="cb-label lh">htmlparser2 — querying XML</span><button class="copy-btn">copy</button></div>
+      <pre><code class="language-js">import { parseDocument } from 'htmlparser2';
+import { selectAll } from 'css-select';
+
+const xml = `&lt;Library&gt;
+  &lt;Book genre="fiction"&gt;&lt;Title&gt;Dune&lt;/Title&gt;&lt;/Book&gt;
+  &lt;Book genre="non-fiction"&gt;&lt;Title&gt;Sapiens&lt;/Title&gt;&lt;/Book&gt;
+&lt;/Library&gt;`;
+
+const doc = parseDocument(xml, { xmlMode: true });
+
+// Tag names are case-sensitive — must match exactly
+const books  = selectAll('Book', doc);           // ✓ matches &lt;Book&gt;
+const titles = selectAll('Book > Title', doc);   // ✓
+const wrong  = selectAll('book', doc);           // ✗ no match (lowercase)
+
+// Attribute selectors work as usual
+const fiction = selectAll('Book[genre="fiction"]', doc);</code></pre>
+    </div>
+
+    <div class="callout tip">
+      <strong>💡 Parsing SVG and RSS/Atom feeds</strong>
+      SVG embedded in HTML parses fine in default mode. For standalone SVG files or RSS/Atom XML feeds, pass <code>xmlMode: true</code> so that self-closing tags and namespace prefixes are handled correctly.
+    </div>
+
+    <div class="callout warn">
+      <strong>⚠ htmlparser2 is not a validating XML parser</strong>
+      It does not enforce well-formedness, DTDs, or XML schemas. Malformed XML is handled with best-effort recovery rather than throwing an error. Use a dedicated XML parser (e.g. <code>fast-xml-parser</code>, <code>sax</code>) if strict validation or namespace resolution is required.
+    </div>
+  </section>
+
+  <!-- ── 14. Cheat Sheet ── -->
   <section id="cheatsheet">
-    <h2><span class="badge">13</span> Cheat Sheet</h2>
+    <h2><span class="badge">14</span> Cheat Sheet</h2>
     <div class="table-wrap">
       <table>
         <tr><th style="width:40%">jsdom</th><th>htmlparser2 equivalent</th></tr>
