@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jsdom → htmlparser2: Migration Guide</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f6f8fa;
+      --surface: #ffffff;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #0969da;
+      --accent-h: #0550ae;
+      --tip-bg: #ddf4ff;
+      --tip-b: #54aeff;
+      --warn-bg: #fff8c5;
+      --warn-b: #d4a72c;
+      --note-bg: #f6f8fa;
+      --note-b: #8b949e;
+      --sidebar: 230px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: var(--sidebar);
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.25rem 0 2rem;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      padding: 0 1rem .75rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: .5rem;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: .3rem 1rem;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color .12s, border-color .12s, background .12s;
+    }
+    .sidebar a:hover { color: var(--text); border-left-color: var(--border); }
+    .sidebar a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 500; background: #f0f6ff; }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      padding: 2.25rem 2.75rem 4rem;
+      max-width: 980px;
+    }
+
+    /* ── Typography ── */
+    h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: .4rem; }
+    .subtitle { font-size: 1.05rem; color: var(--muted); margin-bottom: 2rem; }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: .9rem;
+      padding-top: .2rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--border);
+      color: var(--muted);
+      padding: .1em .45em;
+      border-radius: 999px;
+    }
+
+    h3 { font-size: .95rem; font-weight: 600; margin: 1.4rem 0 .6rem; }
+
+    p { margin-bottom: .8rem; color: #333d47; }
+    ul, ol { margin: .6rem 0 .8rem 1.4rem; }
+    li { margin-bottom: .25rem; }
+
+    section {
+      margin-bottom: 3.25rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    section:last-child { border-bottom: none; }
+
+    /* ── Inline code ── */
+    code {
+      font-family: 'SFMono-Regular', 'Fira Code', Consolas, monospace;
+      font-size: .83em;
+      background: #eef0f3;
+      padding: .1em .35em;
+      border-radius: 4px;
+      color: #c73200;
+    }
+
+    /* ── Code blocks ── */
+    .cb { margin: .8rem 0; border-radius: 8px; overflow: hidden; }
+
+    .cb-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .45rem 1rem;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .cb-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .lj  { color: #f5a742; }
+    .lh  { color: #56d364; }
+    .lb  { color: #79c0ff; }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid #444c56;
+      color: #8b949e;
+      padding: .15rem .55rem;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .12s;
+      font-family: inherit;
+    }
+    .copy-btn:hover { border-color: #8b949e; color: #c9d1d9; }
+    .copy-btn.ok { border-color: #56d364; color: #56d364; }
+
+    pre.hljs { padding: .9rem 1rem; margin: 0; border-radius: 0; }
+    pre code { background: none; padding: 0; font-size: .85rem; color: inherit; }
+
+    /* ── Side-by-side compare ── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .9rem;
+      margin: .9rem 0;
+      align-items: start;
+    }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: .75rem 1rem;
+      border-radius: 6px;
+      margin: .9rem 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .callout strong { display: block; margin-bottom: .2rem; }
+    .tip  { background: var(--tip-bg);  border-left: 3px solid var(--tip-b); }
+    .warn { background: var(--warn-bg); border-left: 3px solid var(--warn-b); }
+    .note { background: var(--note-bg); border-left: 3px solid var(--note-b); }
+
+    /* ── Node diagram ── */
+    .diagram {
+      background: #0d1117;
+      color: #e6edf3;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.9;
+      margin: .9rem 0;
+      overflow-x: auto;
+    }
+    .dj { color: #f5a742; }
+    .dh { color: #56d364; }
+    .dk { color: #79c0ff; }
+    .dv { color: #a5d6ff; }
+    .dm { color: #8b949e; }
+
+    /* ── Cheat sheet table ── */
+    .table-wrap { overflow-x: auto; margin: .9rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th {
+      background: #f0f3f6;
+      padding: .55rem .8rem;
+      text-align: left;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    td { padding: .45rem .8rem; border: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: #fafbfc; }
+    td code { font-size: 12px; }
+    .cat { background: #f0f3f6 !important; font-weight: 600; font-size: 12px; color: var(--muted); }
+
+    /* ── Playground ── */
+    .pg {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pg-head {
+      background: #0d1117;
+      color: #79c0ff;
+      padding: .65rem 1rem;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .pg-body { padding: 1rem; }
+    .pg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: .75rem; }
+    .pg label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: .35rem;
+    }
+    .pg textarea, .pg input[type=text] {
+      width: 100%;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .55rem .7rem;
+      resize: vertical;
+      background: #f6f8fa;
+      transition: border-color .12s, background .12s;
+    }
+    .pg textarea:focus, .pg input[type=text]:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: white;
+    }
+    .pg-actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+
+    .run-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: .45rem 1.1rem;
+      border-radius: 6px;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .12s;
+      font-family: inherit;
+    }
+    .run-btn:hover { background: var(--accent-h); }
+
+    .pg-hint { font-size: 12px; color: var(--muted); }
+
+    .output {
+      margin-top: .75rem;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      min-height: 70px;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 13px;
+      padding: .7rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .output.err { color: #ff7b72; }
+    .output-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: .75rem; margin-bottom: .3rem; }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .sidebar { display: none; }
+      .main { padding: 1.5rem 1.25rem 3rem; }
+      .compare, .pg-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-title">jsdom → htmlparser2</div>
+  <nav id="toc">
+    <a href="#mental-model">Mental Model</a>
+    <a href="#parsing">Parsing</a>
+    <a href="#querying">Querying</a>
+    <a href="#attributes">Attributes</a>
+    <a href="#text">Text Content</a>
+    <a href="#navigation">Navigation</a>
+    <a href="#type-checking">Type Checking</a>
+    <a href="#serialization">Serialization</a>
+    <a href="#classes">Classes</a>
+    <a href="#mutation">Mutation</a>
+    <a href="#adapter">Adapter Pattern</a>
+    <a href="#playground">Live Playground</a>
+    <a href="#cheatsheet">Cheat Sheet</a>
+  </nav>
+</aside>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main class="main">
+
+  <h1>jsdom → htmlparser2</h1>
+  <p class="subtitle">A practical guide to the htmlparser2 + domutils + css-select ecosystem — for developers who know jsdom.</p>
+
+  <!-- ── 1. Mental Model ── -->
+  <section id="mental-model">
+    <h2><span class="badge">1</span> The Mental Model Shift</h2>
+    <p>jsdom simulates a browser: it gives you a live <code>document</code> object with methods (<code>querySelector</code>, <code>getElementById</code>…) that behave exactly like in a browser. The DOM tree is made of class instances.</p>
+    <p>htmlparser2 is different. It gives you a <strong>plain JavaScript object tree</strong>. There is no <code>window</code>, no <code>document.querySelector</code>, no <code>classList</code>. Querying and traversal are done by <em>separate utility libraries</em>.</p>
+
+    <div class="diagram">
+<span class="dm">── jsdom ──────────────────────────────────────────────────</span>
+<span class="dj">const dom = new JSDOM(html)</span>
+<span class="dj">dom.window.document</span>  <span class="dm">← live Document object (browser API)</span>
+  <span class="dj">.querySelector()</span>  <span class="dj">.getElementById()</span>  <span class="dj">.createElement()</span>
+  <span class="dj">.innerHTML</span>  <span class="dj">.textContent</span>  <span class="dj">.classList</span>  <span class="dj">.getAttribute()</span>
+
+<span class="dm">── htmlparser2 ecosystem ──────────────────────────────────</span>
+<span class="dh">parseDocument(html)</span>   <span class="dm">← plain JS object tree (no methods)</span>
+   <span class="dk">css-select</span>  <span class="dm">→ CSS selectors  (selectOne / selectAll)</span>
+   <span class="dk">domutils</span>    <span class="dm">→ everything else (text, attrs, siblings…)</span>
+    </div>
+
+    <div class="callout warn">
+      <strong>⚠ The single biggest gotcha</strong>
+      <code>element.children</code> in jsdom returns only <em>element</em> nodes (HTMLCollection). In htmlparser2, <code>node.children</code> includes <em>all</em> node types — text nodes, comments, everything. Always filter with <code>domutils.isTag(n)</code> when you want elements only.
+    </div>
+
+    <p>A node in htmlparser2 is just a plain object. You can <code>console.log</code> it, spread it, JSON-stringify it. No prototype magic.</p>
+
+    <div class="cb">
+      <div class="cb-head"><span class="cb-label lh">htmlparser2 — what a node looks like</span><button class="copy-btn">copy</button></div>
+      <pre><code class="language-js">// &lt;a href="/about" class="nav-link"&gt;About&lt;/a&gt;
+{
+  type: 'tag',
+  name: 'a',                        // always lowercase
+  attribs: { href: '/about', class: 'nav-link' },
+  children: [
+    { type: 'text', data: 'About', parent: [Circular], … }
+  ],
+  parent: { … },
+  next: { … },   // next sibling (any type)
+  prev: { … }    // previous sibling (any type)
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- ── 2. Parsing ── -->
+  <section id="parsing">
+    <h2><span class="badge">2</span> Parsing HTML</h2>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">const { JSDOM } = require('jsdom');
+
+const dom = new JSDOM(html);
+const document = dom.window.document;
+
+// document is a browser Document object</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">const { parseDocument } = require('htmlparser2');
+
+const document = parseDocument(html);
+
+// document is a plain JS object:
+// { type: 'root', children: [ … ] }</code></pre>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <strong>💡 parseDocument options</strong>
+      Pass <code>{ decodeEntities: false }</code> if you want raw HTML entities preserved. By default entities are decoded. Also accepts <code>xmlMode: true</code> for case-sensitive XHTML parsing.
+    </div>
+
+    <p>The returned <code>document</code> has <code>type: 'root'</code> and a <code>children</code> array. You pass it directly to css-select and domutils functions — think of it as your entry point, equivalent to jsdom's <code>document</code>.</p>
+  </section>
+
+  <!-- ── 3. Querying ── -->
+  <section id="querying">
+    <h2><span class="badge">3</span> Querying the DOM</h2>
+    <p>css-select is the query engine. CSS selectors work identically to what you know from the browser.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Single element (or null)
+document.querySelector('.nav-link')
+document.querySelector('#main')
+document.querySelector('a[href^="https"]')
+
+// All matching elements (NodeList)
+document.querySelectorAll('ul > li')
+document.querySelectorAll('[data-id]')
+
+// Classic helpers
+document.getElementById('main')
+document.getElementsByClassName('card')
+document.getElementsByTagName('p')</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2 + css-select</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">const { selectOne, selectAll } = require('css-select');
+
+// Single element (or null)
+selectOne('.nav-link', document)
+selectOne('#main', document)
+selectOne('a[href^="https"]', document)
+
+// All matching elements (plain Array)
+selectAll('ul > li', document)
+selectAll('[data-id]', document)
+
+// ID / class / tag — just use selectors:
+selectOne('#main', document)
+selectAll('.card', document)
+selectAll('p', document)</code></pre>
+      </div>
+    </div>
+
+    <h3>Predicate-based queries (domutils)</h3>
+    <p>When a CSS selector isn't enough, use <code>domutils.findOne</code> and <code>domutils.findAll</code> with a custom function:</p>
+
+    <div class="cb">
+      <div class="cb-head"><span class="cb-label lb">domutils — predicate queries</span><button class="copy-btn">copy</button></div>
+      <pre><code class="language-js">const domutils = require('domutils');
+
+// Find first tag whose text starts with "Price:"
+const node = domutils.findOne(
+  n => domutils.isTag(n) && domutils.getText(n).startsWith('Price:'),
+  document.children
+);
+
+// Find all &lt;li&gt; elements that have a data-id attribute
+const items = domutils.findAll(
+  n => n.name === 'li' && domutils.hasAttrib(n, 'data-id'),
+  document.children
+);</code></pre>
+    </div>
+
+    <h3>Reusable compiled selectors</h3>
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// No native way to compile/reuse a selector.
+// Every call re-parses the selector string.
+rows.forEach(row => {
+  const cell = row.querySelector('td.price');
+});</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">css-select</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">const { compile, selectOne } = require('css-select');
+
+// Compile once, reuse many times (faster in loops)
+const priceCell = compile('td.price');
+
+rows.forEach(row => {
+  const cell = selectOne(priceCell, row);
+});</code></pre>
+      </div>
+    </div>
+
+    <h3>Check if a node matches a selector</h3>
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">element.matches('.active')
+element.matches('a[href]')</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">css-select</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">const { is } = require('css-select');
+
+is(node, '.active')
+is(node, 'a[href]')</code></pre>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <strong>📋 Return types</strong>
+      jsdom's <code>querySelectorAll</code> returns a live <code>NodeList</code>. css-select's <code>selectAll</code> returns a plain <code>Array</code> — you can use <code>.map()</code>, <code>.filter()</code>, <code>.find()</code> etc. directly on it, no conversion needed.
+    </div>
+  </section>
+
+  <!-- ── 4. Attributes ── -->
+  <section id="attributes">
+    <h2><span class="badge">4</span> Attributes</h2>
+    <p>In htmlparser2, attributes are stored as a plain object on <code>node.attribs</code>. You can access them directly — no method calls required.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Read
+el.getAttribute('href')       // '/about' or null
+el.id                         // shorthand for id attr
+el.className                  // shorthand for class attr
+
+// Check
+el.hasAttribute('disabled')   // true/false
+
+// Write
+el.setAttribute('href', '/new')
+el.removeAttribute('disabled')
+
+// Iterate all attrs
+for (const attr of el.attributes) {
+  console.log(attr.name, attr.value);
+}</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2 + domutils</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Read — direct object access
+el.attribs['href']                    // '/about' or undefined
+el.attribs['id']
+el.attribs['class']
+
+// or with domutils (returns undefined, not null)
+domutils.getAttributeValue(el, 'href')
+
+// Check
+domutils.hasAttrib(el, 'disabled')    // true/false
+'disabled' in el.attribs              // same thing
+
+// Write — mutate the object directly
+el.attribs['href'] = '/new'
+delete el.attribs['disabled']
+
+// Iterate all attrs
+Object.entries(el.attribs).forEach(([name, value]) => {
+  console.log(name, value);
+});</code></pre>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <strong>⚠ null vs undefined</strong>
+      jsdom's <code>getAttribute</code> returns <code>null</code> when an attribute is absent. htmlparser2's <code>el.attribs['missing']</code> and <code>domutils.getAttributeValue</code> return <code>undefined</code>. If your code does <code>if (attr !== null)</code>, update it to <code>if (attr != null)</code> or <code>if (attr !== undefined)</code>.
+    </div>
+
+    <div class="callout tip">
+      <strong>💡 Boolean attributes</strong>
+      In HTML, <code>&lt;input disabled&gt;</code> is parsed as <code>attribs: { disabled: '' }</code> — an empty string, not <code>true</code>. Check presence with <code>domutils.hasAttrib(el, 'disabled')</code>, not by checking the value.
+    </div>
+  </section>
+
+  <!-- ── 5. Text Content ── -->
+  <section id="text">
+    <h2><span class="badge">5</span> Text Content</h2>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// All text, recursively (equivalent to textContent)
+el.textContent
+
+// Rendered text — layout-aware, skips hidden elements
+// (browser only, not really useful in jsdom either)
+el.innerText
+
+// Text node's raw string value
+textNode.nodeValue   // or textNode.data or textNode.textContent</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">domutils</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// All text, recursively — equivalent to textContent
+domutils.getText(node)
+
+// There is no innerText equivalent. That's a browser concept.
+// domutils.getText is what you want.
+
+// Text node's raw string value
+textNode.data</code></pre>
+      </div>
+    </div>
+
+    <h3>Working with text nodes directly</h3>
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Get only direct text node children
+el.childNodes
+  .filter(n => n.nodeType === Node.TEXT_NODE)
+  .map(n => n.textContent)
+  .join('')</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Get only direct text node children
+el.children
+  .filter(n => n.type === 'text')
+  .map(n => n.data)
+  .join('')</code></pre>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <strong>📋 Whitespace</strong>
+      htmlparser2 preserves whitespace-only text nodes (e.g. newlines between tags). Filter with <code>.filter(n =&gt; n.type === 'text' &amp;&amp; n.data.trim())</code> if you only want meaningful text.
+    </div>
+  </section>
+
+  <!-- ── 6. Navigation ── -->
+  <section id="navigation">
+    <h2><span class="badge">6</span> Tree Navigation</h2>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Parent
+el.parentElement    // element parent or null
+el.parentNode       // any node parent (incl. document)
+
+// Children — ELEMENTS only (HTMLCollection)
+el.children
+el.firstElementChild
+el.lastElementChild
+
+// Children — ALL nodes incl. text (NodeList)
+el.childNodes
+el.firstChild
+el.lastChild
+
+// Siblings — elements only
+el.nextElementSibling
+el.previousElementSibling
+
+// Siblings — any node
+el.nextSibling
+el.previousSibling
+
+// Tag name (UPPERCASE)
+el.tagName    // 'DIV'</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2 + domutils</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Parent
+el.parent     // any node parent (null at root)
+domutils.getParent(el)  // same thing
+
+// Children — ALL nodes (text, comments, elements)
+el.children
+el.children.find(domutils.isTag)           // first element child
+[...el.children].reverse().find(domutils.isTag) // last element child
+
+// Children — ELEMENTS only
+el.children.filter(domutils.isTag)
+domutils.getChildren(el).filter(domutils.isTag)
+
+// Siblings — any node
+el.next       // next sibling
+el.prev       // previous sibling
+
+// Siblings — element only
+domutils.getSiblings(el)                   // all siblings including self
+  .filter(domutils.isTag)
+  .find(n => domutils.getSiblings(el).indexOf(n) > domutils.getSiblings(el).indexOf(el))
+
+// Tag name (lowercase)
+el.name       // 'div'</code></pre>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <strong>⚠ tagName casing</strong>
+      jsdom returns <code>el.tagName === 'DIV'</code> (uppercase). htmlparser2 stores <code>el.name === 'div'</code> (lowercase). If your business logic compares tag names, update the comparison or normalize with <code>el.name.toUpperCase()</code>.
+    </div>
+
+    <h3>Next/previous element sibling — clean pattern</h3>
+    <div class="cb">
+      <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
+      <pre><code class="language-js">// Walk forward through siblings until you find an element
+function nextElementSibling(node) {
+  let n = node.next;
+  while (n && !domutils.isTag(n)) n = n.next;
+  return n || null;
+}
+
+function prevElementSibling(node) {
+  let n = node.prev;
+  while (n && !domutils.isTag(n)) n = n.prev;
+  return n || null;
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- ── 7. Type Checking ── -->
+  <section id="type-checking">
+    <h2><span class="badge">7</span> Type Checking</h2>
+    <p>jsdom uses numeric <code>nodeType</code> constants. htmlparser2 uses a <code>type</code> string on each node.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">node.nodeType === Node.ELEMENT_NODE    // 1
+node.nodeType === Node.TEXT_NODE       // 3
+node.nodeType === Node.COMMENT_NODE    // 8
+node.nodeType === Node.DOCUMENT_NODE   // 9
+
+node instanceof Element   // is an element
+node instanceof Text      // is a text node</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2 + domutils</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">domutils.isTag(node)       // type 'tag' | 'script' | 'style'
+domutils.isText(node)      // type === 'text'
+domutils.isComment(node)   // type === 'comment'
+domutils.isDocument(node)  // type === 'root'
+
+// Or check the string directly:
+node.type === 'tag'
+node.type === 'text'
+node.type === 'comment'
+node.type === 'root'</code></pre>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <strong>💡 isTag includes &lt;script&gt; and &lt;style&gt;</strong>
+      <code>domutils.isTag(node)</code> returns <code>true</code> for <code>type === 'tag'</code>, <code>'script'</code>, and <code>'style'</code>. This mirrors browser behavior where <code>&lt;script&gt;</code> is an Element. If you specifically need only regular tags, check <code>node.type === 'tag'</code>.
+    </div>
+
+    <h3>Node type strings at a glance</h3>
+    <div class="table-wrap">
+      <table>
+        <tr><th>HTML</th><th>node.type</th><th>domutils check</th></tr>
+        <tr><td><code>&lt;div&gt;</code>, <code>&lt;p&gt;</code>, etc.</td><td><code>'tag'</code></td><td><code>isTag(n)</code></td></tr>
+        <tr><td><code>&lt;script&gt;</code></td><td><code>'script'</code></td><td><code>isTag(n)</code></td></tr>
+        <tr><td><code>&lt;style&gt;</code></td><td><code>'style'</code></td><td><code>isTag(n)</code></td></tr>
+        <tr><td>text between tags</td><td><code>'text'</code></td><td><code>isText(n)</code></td></tr>
+        <tr><td><code>&lt;!-- comment --&gt;</code></td><td><code>'comment'</code></td><td><code>isComment(n)</code></td></tr>
+        <tr><td>root document</td><td><code>'root'</code></td><td><code>isDocument(n)</code></td></tr>
+        <tr><td><code>&lt;!DOCTYPE html&gt;</code></td><td><code>'directive'</code></td><td>—</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 8. Serialization ── -->
+  <section id="serialization">
+    <h2><span class="badge">8</span> Serialization (innerHTML / outerHTML)</h2>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">el.innerHTML    // content inside the element
+el.outerHTML    // element itself + its content</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">domutils</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">domutils.getInnerHTML(node)    // content inside
+domutils.getOuterHTML(node)    // node + content
+
+// Alternative: dom-serializer (more control)
+const render = require('dom-serializer').default;
+render(node.children)          // inner HTML
+render(node)                   // outer HTML</code></pre>
+      </div>
+    </div>
+
+    <div class="callout note">
+      <strong>📋 dom-serializer</strong>
+      <code>domutils.getInnerHTML/getOuterHTML</code> uses dom-serializer internally. Install it directly (<code>npm i dom-serializer</code>) only if you need options like <code>decodeEntities: false</code> or <code>xmlMode: true</code>.
+    </div>
+  </section>
+
+  <!-- ── 9. Classes ── -->
+  <section id="classes">
+    <h2><span class="badge">9</span> Class Manipulation</h2>
+    <p>There is no <code>classList</code> in htmlparser2. Classes are just a space-separated string in <code>node.attribs.class</code>.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">el.classList.contains('active')
+el.classList.add('active')
+el.classList.remove('active')
+el.classList.toggle('active')
+el.classList.replace('old', 'new')</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">const classes = () =>
+  (el.attribs.class || '').split(/\s+/).filter(Boolean);
+
+// contains
+classes().includes('active')
+// or with css-select (no mutation):
+cssSelect.is(el, '.active')
+
+// add
+if (!classes().includes('active'))
+  el.attribs.class = [...classes(), 'active'].join(' ');
+
+// remove
+el.attribs.class = classes().filter(c => c !== 'active').join(' ');
+
+// toggle
+el.attribs.class = classes().includes('active')
+  ? classes().filter(c => c !== 'active').join(' ')
+  : [...classes(), 'active'].join(' ');
+
+// replace
+el.attribs.class = classes().map(c => c === 'old' ? 'new' : c).join(' ');</code></pre>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <strong>💡 Wrap it once</strong>
+      If you use class manipulation a lot, write a tiny helper at the top of the file rather than repeating the split/join pattern. This is also a good indicator of what belongs in an adapter (see section 11).
+    </div>
+  </section>
+
+  <!-- ── 10. Mutation ── -->
+  <section id="mutation">
+    <h2><span class="badge">10</span> DOM Mutation</h2>
+    <p>You can mutate the tree by editing the plain objects directly, or use domutils helpers for structural changes.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Remove a node
+el.parentNode.removeChild(el)
+// or: el.remove()
+
+// Replace a node
+el.parentNode.replaceChild(newNode, el)
+
+// Insert before/after
+parent.insertBefore(newNode, refNode)
+
+// Create nodes
+document.createElement('div')
+document.createTextNode('hello')</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">domutils</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Remove a node (updates parent.children + sibling links)
+domutils.removeElement(el)
+
+// Replace a node
+domutils.replaceElement(el, newNode)
+
+// Insert as sibling
+domutils.prepend(refNode, newNode)   // insert newNode before refNode
+domutils.append(refNode, newNode)    // insert newNode after refNode
+
+// Create nodes — use domhandler constructors:
+const { Element, Text } = require('domhandler');
+const div = new Element('div', { class: 'box' }, []);
+const txt = new Text('hello');</code></pre>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <strong>⚠ Keep the tree consistent</strong>
+      When creating nodes manually and inserting them, domutils helpers (<code>append</code>, <code>prepend</code>) update the <code>parent</code>, <code>next</code>, and <code>prev</code> references for you. If you push directly into <code>node.children</code> without using these helpers, those references go stale and queries/traversal will break.
+    </div>
+
+    <h3>Append a child</h3>
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">parent.appendChild(child);</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Append as the last child using append() on the last existing child,
+// or build the children array at construction time:
+const { Element } = require('domhandler');
+const parent = new Element('ul', {}, [child1, child2]);
+
+// To append after-the-fact:
+if (parent.children.length > 0) {
+  domutils.append(parent.children[parent.children.length - 1], child);
+} else {
+  child.parent = parent;
+  parent.children.push(child);
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 11. Adapter Pattern ── -->
+  <section id="adapter">
+    <h2><span class="badge">11</span> The Adapter Pattern</h2>
+    <p>You're considering wrapping htmlparser2 in a jsdom-compatible interface so your business logic doesn't change. Here's a realistic view of what that looks like.</p>
+
+    <div class="cb">
+      <div class="cb-head"><span class="cb-label lb">Minimal adapter skeleton</span><button class="copy-btn">copy</button></div>
+      <pre><code class="language-js">// adapter.js
+const { parseDocument } = require('htmlparser2');
+const domutils = require('domutils');
+const { selectOne, selectAll, is } = require('css-select');
+
+class NodeAdapter {
+  constructor(node) { this._n = node; }
+
+  // ── Querying ──
+  querySelector(sel)    { const n = selectOne(sel, this._n); return n ? new NodeAdapter(n) : null; }
+  querySelectorAll(sel) { return selectAll(sel, this._n).map(n => new NodeAdapter(n)); }
+  matches(sel)          { return is(this._n, sel); }
+  closest(sel)          {
+    let n = this._n;
+    while (n) { if (domutils.isTag(n) && is(n, sel)) return new NodeAdapter(n); n = n.parent; }
+    return null;
+  }
+
+  // ── Attributes ──
+  getAttribute(name)         { return this._n.attribs?.[name] ?? null; }
+  setAttribute(name, value)  { if (this._n.attribs) this._n.attribs[name] = value; }
+  hasAttribute(name)         { return domutils.hasAttrib(this._n, name); }
+  removeAttribute(name)      { delete this._n.attribs?.[name]; }
+
+  // ── Content ──
+  get textContent()  { return domutils.getText(this._n); }
+  get innerHTML()    { return domutils.getInnerHTML(this._n); }
+  get outerHTML()    { return domutils.getOuterHTML(this._n); }
+
+  // ── Identity ──
+  get tagName()      { return this._n.name?.toUpperCase() ?? ''; }
+  get id()           { return this._n.attribs?.id ?? ''; }
+  get className()    { return this._n.attribs?.class ?? ''; }
+
+  // ── Navigation ──
+  get parentElement() {
+    const p = this._n.parent;
+    return p && domutils.isTag(p) ? new NodeAdapter(p) : null;
+  }
+  get children() {
+    return (this._n.children || []).filter(domutils.isTag).map(n => new NodeAdapter(n));
+  }
+  get childNodes() {
+    return (this._n.children || []).map(n => new NodeAdapter(n));
+  }
+  get nextElementSibling() {
+    let n = this._n.next;
+    while (n && !domutils.isTag(n)) n = n.next;
+    return n ? new NodeAdapter(n) : null;
+  }
+  get previousElementSibling() {
+    let n = this._n.prev;
+    while (n && !domutils.isTag(n)) n = n.prev;
+    return n ? new NodeAdapter(n) : null;
+  }
+
+  // ── classList shim ──
+  get classList() {
+    const el = this._n;
+    const get = () => (el.attribs?.class || '').split(/\s+/).filter(Boolean);
+    return {
+      contains: c => get().includes(c),
+      add:      c => { if (!get().includes(c)) el.attribs.class = [...get(), c].join(' '); },
+      remove:   c => { el.attribs.class = get().filter(x => x !== c).join(' '); },
+      toggle:   c => get().includes(c)
+                  ? (el.attribs.class = get().filter(x => x !== c).join(' '))
+                  : (el.attribs.class = [...get(), c].join(' ')),
+    };
+  }
+
+  // ── Unwrap to raw node if needed ──
+  get raw() { return this._n; }
+}
+
+function parseHTML(html) {
+  const doc = parseDocument(html);
+  return new NodeAdapter(doc);
+}
+
+module.exports = { parseHTML, NodeAdapter };</code></pre>
+    </div>
+
+    <h3>When the adapter is the right choice</h3>
+    <ul>
+      <li>Your business logic is large and heavily uses the DOM API — rewriting everything at once is risky.</li>
+      <li>You want to swap the underlying parser without touching tested business logic.</li>
+      <li>You can ship the adapter, migrate gradually, then decide whether to remove it later.</li>
+    </ul>
+
+    <h3>When to skip the adapter and migrate directly</h3>
+    <ul>
+      <li>Your DOM usage is limited and already mapped (querying + attribute reads + text extraction).</li>
+      <li>The adapter is papering over gaps — every missing method you add is a maintenance burden.</li>
+      <li>You want the <em>full</em> performance benefit of htmlparser2 (the adapter adds object wrapping overhead).</li>
+    </ul>
+
+    <div class="callout tip">
+      <strong>💡 Recommendation</strong>
+      Start with the adapter. It lets you validate that htmlparser2 produces correct results against your existing tests without touching business logic. Once you have confidence, decide per-module whether a direct migration is worth it.
+    </div>
+  </section>
+
+  <!-- ── 12. Live Playground ── -->
+  <section id="playground">
+    <h2><span class="badge">12</span> Live Playground</h2>
+    <p>Parse HTML and query it with css-select — running real htmlparser2 + domutils + css-select in the browser.</p>
+
+    <div class="pg">
+      <div class="pg-head">▶ htmlparser2 + domutils + css-select — live in browser</div>
+      <div class="pg-body">
+        <div class="pg-grid">
+          <div>
+            <label for="pg-html">HTML to parse</label>
+            <textarea id="pg-html" rows="9">&lt;ul id="menu"&gt;
+  &lt;li class="item active" data-id="1"&gt;Home&lt;/li&gt;
+  &lt;li class="item" data-id="2"&gt;
+    &lt;a href="/about"&gt;About&lt;/a&gt;
+  &lt;/li&gt;
+  &lt;li class="item disabled" data-id="3"&gt;Contact&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p class="note"&gt;Footer &lt;strong&gt;note&lt;/strong&gt;&lt;/p&gt;</textarea>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <div>
+              <label for="pg-sel">CSS Selector (css-select)</label>
+              <input type="text" id="pg-sel" value=".item:not(.disabled)">
+            </div>
+            <div>
+              <label for="pg-attr">Attribute to read (optional)</label>
+              <input type="text" id="pg-attr" placeholder="e.g. data-id, href, class">
+            </div>
+          </div>
+        </div>
+        <div class="pg-actions">
+          <button class="run-btn" id="pg-run">Run Query</button>
+          <span class="pg-hint">Results are real nodes — getText, attribs, name, etc.</span>
+        </div>
+        <div class="output-label">Output</div>
+        <div class="output" id="pg-out">Click "Run Query" to see results.</div>
+      </div>
+    </div>
+
+    <div class="callout note" style="margin-top:1rem;">
+      <strong>📋 About the playground</strong>
+      Uses <a href="https://esm.sh" style="color:var(--accent)">esm.sh</a> to load htmlparser2, domutils, and css-select as ES modules — the exact same code that runs in Node.js. If the playground shows a loading error, check your network connection.
+    </div>
+  </section>
+
+  <!-- ── 13. Cheat Sheet ── -->
+  <section id="cheatsheet">
+    <h2><span class="badge">13</span> Cheat Sheet</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th style="width:40%">jsdom</th><th>htmlparser2 equivalent</th></tr>
+
+        <tr><td colspan="2" class="cat">SETUP</td></tr>
+        <tr><td><code>new JSDOM(html).window.document</code></td><td><code>parseDocument(html)</code></td></tr>
+
+        <tr><td colspan="2" class="cat">QUERYING</td></tr>
+        <tr><td><code>document.querySelector(sel)</code></td><td><code>selectOne(sel, document)</code></td></tr>
+        <tr><td><code>document.querySelectorAll(sel)</code></td><td><code>selectAll(sel, document)</code> → plain Array</td></tr>
+        <tr><td><code>document.getElementById('x')</code></td><td><code>selectOne('#x', document)</code></td></tr>
+        <tr><td><code>document.getElementsByClassName('x')</code></td><td><code>selectAll('.x', document)</code></td></tr>
+        <tr><td><code>document.getElementsByTagName('p')</code></td><td><code>selectAll('p', document)</code></td></tr>
+        <tr><td><code>el.matches(sel)</code></td><td><code>is(el, sel)</code> from css-select</td></tr>
+        <tr><td><code>el.closest(sel)</code></td><td>manual walk up via <code>el.parent</code></td></tr>
+        <tr><td>—</td><td><code>domutils.findOne(fn, nodes)</code> — predicate query</td></tr>
+        <tr><td>—</td><td><code>compile(sel)</code> — reusable selector</td></tr>
+
+        <tr><td colspan="2" class="cat">ATTRIBUTES</td></tr>
+        <tr><td><code>el.getAttribute('x')</code> → null if missing</td><td><code>el.attribs['x']</code> → undefined if missing</td></tr>
+        <tr><td><code>el.setAttribute('x', v)</code></td><td><code>el.attribs['x'] = v</code></td></tr>
+        <tr><td><code>el.hasAttribute('x')</code></td><td><code>domutils.hasAttrib(el, 'x')</code></td></tr>
+        <tr><td><code>el.removeAttribute('x')</code></td><td><code>delete el.attribs['x']</code></td></tr>
+        <tr><td><code>el.id</code></td><td><code>el.attribs['id']</code></td></tr>
+        <tr><td><code>el.className</code></td><td><code>el.attribs['class']</code></td></tr>
+
+        <tr><td colspan="2" class="cat">TEXT CONTENT</td></tr>
+        <tr><td><code>el.textContent</code></td><td><code>domutils.getText(el)</code></td></tr>
+        <tr><td><code>textNode.data</code></td><td><code>textNode.data</code> ← same!</td></tr>
+
+        <tr><td colspan="2" class="cat">NAVIGATION</td></tr>
+        <tr><td><code>el.tagName</code> (uppercase)</td><td><code>el.name</code> (lowercase)</td></tr>
+        <tr><td><code>el.parentElement</code></td><td><code>el.parent</code> (check <code>domutils.isTag</code>)</td></tr>
+        <tr><td><code>el.children</code> (elements only)</td><td><code>el.children.filter(domutils.isTag)</code></td></tr>
+        <tr><td><code>el.childNodes</code> (all nodes)</td><td><code>el.children</code></td></tr>
+        <tr><td><code>el.nextElementSibling</code></td><td>walk <code>el.next</code> until <code>isTag</code></td></tr>
+        <tr><td><code>el.previousElementSibling</code></td><td>walk <code>el.prev</code> until <code>isTag</code></td></tr>
+        <tr><td><code>el.nextSibling</code></td><td><code>el.next</code></td></tr>
+        <tr><td><code>el.previousSibling</code></td><td><code>el.prev</code></td></tr>
+
+        <tr><td colspan="2" class="cat">TYPE CHECKING</td></tr>
+        <tr><td><code>nodeType === 1</code> (element)</td><td><code>domutils.isTag(n)</code></td></tr>
+        <tr><td><code>nodeType === 3</code> (text)</td><td><code>domutils.isText(n)</code> or <code>n.type === 'text'</code></td></tr>
+        <tr><td><code>nodeType === 8</code> (comment)</td><td><code>domutils.isComment(n)</code></td></tr>
+        <tr><td><code>node instanceof Element</code></td><td><code>domutils.isTag(n)</code></td></tr>
+
+        <tr><td colspan="2" class="cat">SERIALIZATION</td></tr>
+        <tr><td><code>el.innerHTML</code></td><td><code>domutils.getInnerHTML(el)</code></td></tr>
+        <tr><td><code>el.outerHTML</code></td><td><code>domutils.getOuterHTML(el)</code></td></tr>
+
+        <tr><td colspan="2" class="cat">CLASSES</td></tr>
+        <tr><td><code>el.classList.contains('x')</code></td><td><code>is(el, '.x')</code> or manual split</td></tr>
+        <tr><td><code>el.classList.add('x')</code></td><td>manual split/join on <code>el.attribs.class</code></td></tr>
+        <tr><td><code>el.classList.remove('x')</code></td><td>manual split/filter/join</td></tr>
+
+        <tr><td colspan="2" class="cat">MUTATION</td></tr>
+        <tr><td><code>parent.removeChild(el)</code></td><td><code>domutils.removeElement(el)</code></td></tr>
+        <tr><td><code>parent.replaceChild(new, old)</code></td><td><code>domutils.replaceElement(old, new)</code></td></tr>
+        <tr><td><code>parent.insertBefore(new, ref)</code></td><td><code>domutils.prepend(ref, new)</code></td></tr>
+        <tr><td><code>document.createElement('div')</code></td><td><code>new Element('div', {}, [])</code> from domhandler</td></tr>
+        <tr><td><code>document.createTextNode('x')</code></td><td><code>new Text('x')</code> from domhandler</td></tr>
+      </table>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script>
+// ── Code copy buttons ──
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const code = btn.closest('.cb').querySelector('code');
+    navigator.clipboard.writeText(code.innerText).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('ok'); }, 1500);
+    });
+  });
+});
+
+// ── Sidebar active link on scroll ──
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('#toc a');
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector(`#toc a[href="#${e.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => io.observe(s));
+
+// ── Highlight.js ──
+hljs.highlightAll();
+
+// ── Live Playground ──
+// Load libraries from esm.sh
+let _parseDocument, _domutils, _selectOne, _selectAll;
+let libsReady = false;
+
+(async () => {
+  try {
+    const [hp2, du, cs] = await Promise.all([
+      import('https://esm.sh/htmlparser2@9'),
+      import('https://esm.sh/domutils@3'),
+      import('https://esm.sh/css-select@5'),
+    ]);
+    _parseDocument = hp2.parseDocument;
+    _domutils      = du;
+    _selectOne     = cs.selectOne;
+    _selectAll     = cs.selectAll;
+    libsReady = true;
+    document.getElementById('pg-run').textContent = 'Run Query';
+  } catch(e) {
+    document.getElementById('pg-out').textContent = 'Failed to load libraries: ' + e.message;
+    document.getElementById('pg-out').classList.add('err');
+  }
+})();
+
+document.getElementById('pg-run').addEventListener('click', () => {
+  const out = document.getElementById('pg-out');
+  out.className = 'output';
+
+  if (!libsReady) {
+    out.textContent = 'Libraries still loading, please wait…';
+    return;
+  }
+
+  const html     = document.getElementById('pg-html').value;
+  const selector = document.getElementById('pg-sel').value.trim();
+  const attrName = document.getElementById('pg-attr').value.trim();
+
+  try {
+    const doc   = _parseDocument(html);
+    const nodes = selector ? _selectAll(selector, doc) : [];
+
+    if (!selector) { out.textContent = 'Enter a selector above.'; return; }
+    if (nodes.length === 0) { out.textContent = `No matches for: ${selector}`; return; }
+
+    const lines = nodes.map((n, i) => {
+      const tag    = n.name || n.type;
+      const text   = _domutils.getText(n).trim().replace(/\s+/g, ' ');
+      const attr   = attrName ? `  ${attrName}="${n.attribs?.[attrName] ?? '(not set)'}"` : '';
+      const cls    = n.attribs?.class ? `  class="${n.attribs.class}"` : '';
+      const inner  = _domutils.getInnerHTML(n);
+      return [
+        `[${i}] <${tag}>${cls}${attr}`,
+        `     text:      "${text || '(empty)'}"`,
+        `     innerHTML: ${inner.length > 60 ? inner.slice(0, 57) + '…' : inner || '(empty)'}`,
+        `     type:      "${n.type}"`,
+      ].join('\n');
+    });
+
+    out.textContent = `${nodes.length} match${nodes.length !== 1 ? 'es' : ''}:\n\n` + lines.join('\n\n');
+  } catch(e) {
+    out.textContent = 'Error: ' + e.message;
+    out.classList.add('err');
+  }
+});
+</script>
+
+</body>
+</html>
