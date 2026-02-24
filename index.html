@@ -278,7 +278,8 @@
       transition: background .12s;
       font-family: inherit;
     }
-    .run-btn:hover { background: var(--accent-h); }
+    .run-btn:hover:not(:disabled) { background: var(--accent-h); }
+    .run-btn:disabled { background: #8b949e; cursor: default; }
 
     .pg-hint { font-size: 12px; color: var(--muted); }
 
@@ -406,6 +407,11 @@ const document = parseDocument(html);
 // document is a plain JS object:
 // { type: 'root', children: [ … ] }</code></pre>
       </div>
+    </div>
+
+    <div class="callout note">
+      <strong>📦 Install</strong>
+      <code>npm install htmlparser2 domutils css-select domhandler</code>
     </div>
 
     <div class="callout tip">
@@ -619,7 +625,8 @@ textNode.data</code></pre>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
         <pre><code class="language-js">// Get only direct text node children
-el.childNodes
+// NodeList has no .filter() — spread it first
+[...el.childNodes]
   .filter(n => n.nodeType === Node.TEXT_NODE)
   .map(n => n.textContent)
   .join('')</code></pre>
@@ -691,10 +698,10 @@ domutils.getChildren(el).filter(domutils.isTag)
 el.next       // next sibling
 el.prev       // previous sibling
 
-// Siblings — element only
-domutils.getSiblings(el)                   // all siblings including self
-  .filter(domutils.isTag)
-  .find(n => domutils.getSiblings(el).indexOf(n) > domutils.getSiblings(el).indexOf(el))
+// Siblings — element only (walk next/prev, skip non-elements)
+let n = el.next;
+while (n && !domutils.isTag(n)) n = n.next;
+// n is nextElementSibling (or null) — see clean helpers below
 
 // Tag name (lowercase)
 el.name       // 'div'</code></pre>
@@ -1061,8 +1068,8 @@ module.exports = { parseHTML, NodeAdapter };</code></pre>
           </div>
         </div>
         <div class="pg-actions">
-          <button class="run-btn" id="pg-run">Run Query</button>
-          <span class="pg-hint">Results are real nodes — getText, attribs, name, etc.</span>
+          <button class="run-btn" id="pg-run" disabled>Loading libraries…</button>
+          <span class="pg-hint">Real htmlparser2 running in the browser via esm.sh</span>
         </div>
         <div class="output-label">Output</div>
         <div class="output" id="pg-out">Click "Run Query" to see results.</div>
@@ -1195,8 +1202,12 @@ let libsReady = false;
     _selectOne     = cs.selectOne;
     _selectAll     = cs.selectAll;
     libsReady = true;
-    document.getElementById('pg-run').textContent = 'Run Query';
+    const btn = document.getElementById('pg-run');
+    btn.textContent = 'Run Query';
+    btn.disabled = false;
   } catch(e) {
+    const btn = document.getElementById('pg-run');
+    btn.textContent = 'Load failed';
     document.getElementById('pg-out').textContent = 'Failed to load libraries: ' + e.message;
     document.getElementById('pg-out').classList.add('err');
   }
