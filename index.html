@@ -411,7 +411,9 @@ const document = parseDocument(html);
 
     <div class="callout note">
       <strong>📦 Install</strong>
-      <code>npm install htmlparser2 domutils css-select domhandler</code>
+      <code>npm install htmlparser2 domutils css-select domhandler</code><br><br>
+      All examples use CommonJS <code>require()</code>. For ESM, swap to named imports:
+      <code>import { parseDocument } from 'htmlparser2'</code>, <code>import * as domutils from 'domutils'</code>, etc.
     </div>
 
     <div class="callout tip">
@@ -911,14 +913,15 @@ const txt = new Text('hello');</code></pre>
       </div>
       <div class="cb">
         <div class="cb-head"><span class="cb-label lh">htmlparser2</span><button class="copy-btn">copy</button></div>
-        <pre><code class="language-js">// Append as the last child using append() on the last existing child,
-// or build the children array at construction time:
+        <pre><code class="language-js">// Preferred: pass children at construction time
 const { Element } = require('domhandler');
-const parent = new Element('ul', {}, [child1, child2]);
+const ul = new Element('ul', {}, [li1, li2, li3]);
 
-// To append after-the-fact:
-if (parent.children.length > 0) {
-  domutils.append(parent.children[parent.children.length - 1], child);
+// Append after the fact — domutils.append() adds a sibling,
+// so target the last child. Fall back for empty parent:
+const last = parent.children.at(-1);
+if (last) {
+  domutils.append(last, child);
 } else {
   child.parent = parent;
   parent.children.push(child);
@@ -1142,8 +1145,8 @@ module.exports = { parseHTML, NodeAdapter };</code></pre>
 
         <tr><td colspan="2" class="cat">MUTATION</td></tr>
         <tr><td><code>parent.removeChild(el)</code></td><td><code>domutils.removeElement(el)</code></td></tr>
-        <tr><td><code>parent.replaceChild(new, old)</code></td><td><code>domutils.replaceElement(old, new)</code></td></tr>
-        <tr><td><code>parent.insertBefore(new, ref)</code></td><td><code>domutils.prepend(ref, new)</code></td></tr>
+        <tr><td><code>parent.replaceChild(newEl, el)</code></td><td><code>domutils.replaceElement(el, newEl)</code></td></tr>
+        <tr><td><code>parent.insertBefore(newEl, ref)</code></td><td><code>domutils.prepend(ref, newEl)</code></td></tr>
         <tr><td><code>document.createElement('div')</code></td><td><code>new Element('div', {}, [])</code> from domhandler</td></tr>
         <tr><td><code>document.createTextNode('x')</code></td><td><code>new Text('x')</code> from domhandler</td></tr>
       </table>
