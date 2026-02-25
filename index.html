@@ -316,7 +316,8 @@
 
     /* ── Attribution card ── */
     .attribution-card {
-      margin-top: 2.5rem;
+      margin-top: 0;
+      margin-bottom: 2rem;
       padding: .85rem 1.1rem;
       background: var(--surface);
       border: 1px solid var(--border);
@@ -369,6 +370,11 @@
 
 <!-- ══════════════════ MAIN ══════════════════ -->
 <main class="main">
+
+  <div class="attribution-card">
+    <span>Authored by <strong>Claude</strong>, prompted by <strong>Aleksei Ivanov</strong>.</span>
+    <a href="https://aleksei.dev/feel-the-api/" target="_blank" rel="noopener">Why this guide exists →</a>
+  </div>
 
   <h1>Migrating from jsdom to htmlparser2</h1>
   <p class="subtitle">A practical reference for developers who know jsdom and want to switch to the htmlparser2 ecosystem.</p>
@@ -1265,10 +1271,6 @@ const fiction = selectAll('Book[genre="fiction"]', doc);</code></pre>
     </div>
   </section>
 
-  <div class="attribution-card">
-    <span>Authored by <strong>Claude</strong>, initiated by <strong>Aleksei Ivanov</strong>.</span>
-    <a href="https://aleksei.dev/feel-the-api/" target="_blank" rel="noopener">Why this guide exists →</a>
-  </div>
 
 </main>
 </div>
