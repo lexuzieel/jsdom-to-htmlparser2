@@ -361,10 +361,11 @@
     <a href="#serialization">8. Serialization</a>
     <a href="#classes">9. Classes</a>
     <a href="#mutation">10. Mutation</a>
-    <a href="#adapter">11. Adapter Pattern</a>
-    <a href="#playground">12. Live Playground</a>
-    <a href="#xml-mode">13. XML Mode</a>
-    <a href="#cheatsheet">14. Cheat Sheet</a>
+    <a href="#clone">11. Cloning Nodes</a>
+    <a href="#adapter">12. Adapter Pattern</a>
+    <a href="#playground">13. Live Playground</a>
+    <a href="#xml-mode">14. XML Mode</a>
+    <a href="#cheatsheet">15. Cheat Sheet</a>
   </nav>
 </aside>
 
@@ -969,9 +970,61 @@ if (last) {
     </div>
   </section>
 
-  <!-- ── 11. Adapter Pattern ── -->
+  <!-- ── 11. Cloning Nodes ── -->
+  <section id="clone">
+    <h2><span class="badge">11.</span> Cloning Nodes<a class="anchor-link" href="#clone" aria-label="Link to section">#</a></h2>
+    <p>jsdom's <code>node.cloneNode(deep)</code> has no direct equivalent in domutils, but <code>domhandler</code> exports a <code>cloneNode</code> utility that provides the same semantics.</p>
+
+    <div class="compare">
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lj">jsdom</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">// Shallow clone — copies the node, not its children
+const shallow = el.cloneNode(false);
+
+// Deep clone — copies the node and its entire subtree
+const deep = el.cloneNode(true);</code></pre>
+      </div>
+      <div class="cb">
+        <div class="cb-head"><span class="cb-label lh">domhandler</span><button class="copy-btn">copy</button></div>
+        <pre><code class="language-js">import { cloneNode } from 'domhandler';
+
+// Shallow clone (deep defaults to false)
+const shallow = cloneNode(el);
+
+// Deep clone
+const deep = cloneNode(el, true);</code></pre>
+      </div>
+    </div>
+
+    <p><code>cloneNode</code> resets <code>parent</code>, <code>next</code>, and <code>prev</code> on the cloned root to <code>null</code>, mirroring jsdom's behaviour of producing a detached node. For deep clones the entire child subtree is recursively duplicated with fresh object references.</p>
+
+    <h3>Cloning and reinserting</h3>
+    <div class="cb">
+      <div class="cb-head"><span class="cb-label lb">Example</span><button class="copy-btn">copy</button></div>
+      <pre><code class="language-js">import { parseDocument } from 'htmlparser2';
+import { cloneNode } from 'domhandler';
+import * as domutils from 'domutils';
+
+const doc = parseDocument(`&lt;ul&gt;&lt;li class="template"&gt;Item&lt;/li&gt;&lt;/ul&gt;`);
+const template = domutils.findOne(
+  n => n.attribs?.class === 'template',
+  doc.children
+);
+
+// Deep-clone the template and insert it as the next sibling
+const copy = cloneNode(template, true);
+copy.attribs.class = 'item'; // mutate the clone, not the original
+domutils.append(template, copy);</code></pre>
+    </div>
+
+    <div class="callout note">
+      <strong>Note</strong> <code>cloneNode</code> is exported from <code>domhandler</code>, not from <code>domutils</code>. <code>domhandler</code> is a direct dependency of <code>htmlparser2</code>, so it is already available in your <code>node_modules</code> without an explicit install.
+    </div>
+  </section>
+
+  <!-- ── 12. Adapter Pattern ── -->
   <section id="adapter">
-    <h2><span class="badge">11.</span> The Adapter Pattern<a class="anchor-link" href="#adapter" aria-label="Link to section">#</a></h2>
+    <h2><span class="badge">12.</span> The Adapter Pattern<a class="anchor-link" href="#adapter" aria-label="Link to section">#</a></h2>
     <p>You're considering wrapping htmlparser2 in a jsdom-compatible interface so your business logic doesn't change. Here's a realistic view of what that looks like.</p>
 
     <div class="cb">
@@ -1080,7 +1133,7 @@ export { parseHTML, NodeAdapter };</code></pre>
 
   <!-- ── 12. Live Playground ── -->
   <section id="playground">
-    <h2><span class="badge">12.</span> Live Playground<a class="anchor-link" href="#playground" aria-label="Link to section">#</a></h2>
+    <h2><span class="badge">13.</span> Live Playground<a class="anchor-link" href="#playground" aria-label="Link to section">#</a></h2>
     <p>Parse HTML and query it with css-select — running real htmlparser2 + domutils + css-select in the browser.</p>
 
     <div class="pg">
@@ -1126,7 +1179,7 @@ export { parseHTML, NodeAdapter };</code></pre>
 
   <!-- ── 13. XML Mode ── -->
   <section id="xml-mode">
-    <h2><span class="badge">13.</span> XML Mode<a class="anchor-link" href="#xml-mode" aria-label="Link to section">#</a></h2>
+    <h2><span class="badge">14.</span> XML Mode<a class="anchor-link" href="#xml-mode" aria-label="Link to section">#</a></h2>
     <p>htmlparser2 ships a built-in XML mode that changes how the parser interprets the document. jsdom supports the same via the <code>contentType</code> constructor option — both give you case-sensitive tag names, self-closing tags, and no implicit HTML structure injection.</p>
 
     <div class="compare">
@@ -1205,7 +1258,7 @@ const fiction = selectAll('Book[genre="fiction"]', doc);</code></pre>
 
   <!-- ── 14. Cheat Sheet ── -->
   <section id="cheatsheet">
-    <h2><span class="badge">14.</span> Cheat Sheet<a class="anchor-link" href="#cheatsheet" aria-label="Link to section">#</a></h2>
+    <h2><span class="badge">15.</span> Cheat Sheet<a class="anchor-link" href="#cheatsheet" aria-label="Link to section">#</a></h2>
     <div class="table-wrap">
       <table>
         <tr><th style="width:40%">jsdom</th><th>htmlparser2 equivalent</th></tr>
@@ -1267,6 +1320,10 @@ const fiction = selectAll('Book[genre="fiction"]', doc);</code></pre>
         <tr><td><code>parent.insertBefore(newEl, ref)</code></td><td><code>domutils.prepend(ref, newEl)</code></td></tr>
         <tr><td><code>document.createElement('div')</code></td><td><code>new Element('div', {}, [])</code> from domhandler</td></tr>
         <tr><td><code>document.createTextNode('x')</code></td><td><code>new Text('x')</code> from domhandler</td></tr>
+
+        <tr><td colspan="2" class="cat">CLONING</td></tr>
+        <tr><td><code>el.cloneNode(false)</code></td><td><code>cloneNode(el)</code> from domhandler</td></tr>
+        <tr><td><code>el.cloneNode(true)</code></td><td><code>cloneNode(el, true)</code> from domhandler</td></tr>
       </table>
     </div>
   </section>
