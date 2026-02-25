@@ -314,8 +314,31 @@
       .compare, .pg-grid { grid-template-columns: 1fr; }
     }
 
+    /* ── Attribution card ── */
+    .attribution-card {
+      margin-top: 2.5rem;
+      padding: .85rem 1.1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .attribution-card strong { color: var(--text); font-weight: 600; }
+    .attribution-card a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .attribution-card a:hover { text-decoration: underline; }
     @media (max-width: 600px) {
-      h1 { font-size: 1.5rem; }
+      .attribution-card { flex-direction: column; align-items: flex-start; gap: .5rem; }
     }
   </style>
 </head>
@@ -1241,6 +1264,11 @@ const fiction = selectAll('Book[genre="fiction"]', doc);</code></pre>
       </table>
     </div>
   </section>
+
+  <div class="attribution-card">
+    <span>Authored by <strong>Claude</strong>, initiated by <strong>Aleksei Ivanov</strong>.</span>
+    <a href="https://aleksei.dev/feel-the-api/" target="_blank" rel="noopener">Why this guide exists →</a>
+  </div>
 
 </main>
 </div>
